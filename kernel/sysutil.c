@@ -1,7 +1,7 @@
 #include "types.h"
 #include "defs.h" // Generally required for system call implementations
 #include "proc.h" // Generally required for system call implementations
-
+#include "spinlock.h" // Needed for struct spinlock definition
 // Existing implementation for kbdint:
 extern int keyboard_int_cnt;
 uint64 sys_kbdint()

@@ -156,6 +156,7 @@ UPROGS=\
 	$U/_getppidtest\
 	$U/_datetime\
 	$U/_countsyscall\
+	$U/_uptime\
 
 
 fs.img: mkfs/mkfs README $(UPROGS)
