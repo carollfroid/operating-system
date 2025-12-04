@@ -39,3 +39,4 @@ entry("uptime");
 entry("kbdint");
 entry("getppid");
 entry("datetime");
+entry("countsyscall");

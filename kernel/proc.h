@@ -1,4 +1,7 @@
 #include "spinlock.h"
+#include "types.h"     // For basic types like uint, uint64
+#include "riscv.h"     // For pagetable_t and pte_t (which pagetable_t often depends on)
+#include "param.h"
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;

@@ -26,6 +26,7 @@ int uptime(void);
 int kbdint(void);
 int getppid(void);
 int datetime(struct rtcdate *r);
+int countsyscall(void);
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);

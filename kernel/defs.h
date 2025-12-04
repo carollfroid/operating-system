@@ -8,7 +8,9 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
-
+#include "types.h"     // For uint64, uchar, uint
+#include "riscv.h"     // For pagetable_t and pte_t
+#include "param.h"     // For global constants often used in function prototypes
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);

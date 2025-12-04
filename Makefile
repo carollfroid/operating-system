@@ -155,6 +155,7 @@ UPROGS=\
 	$U/_keycount\
 	$U/_getppidtest\
 	$U/_datetime\
+	$U/_countsyscall\
 
 
 fs.img: mkfs/mkfs README $(UPROGS)
