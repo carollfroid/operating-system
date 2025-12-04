@@ -1,3 +1,4 @@
+#include "kernel/stat.h"
 struct stat;
 
 // system calls
@@ -22,7 +23,9 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-
+int kbdint(void);
+int getppid(void);
+int datetime(struct rtcdate *r);
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);

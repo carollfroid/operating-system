@@ -3,8 +3,12 @@
 #include "defs.h"
 #include "param.h"
 #include "memlayout.h"
-#include "spinlock.h"
 #include "proc.h"
+#include "types.h"
+#include "stat.h"
+#include "spinlock.h"
+
+extern struct spinlock wait_lock;
 
 uint64
 sys_exit(void)
@@ -90,4 +94,48 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64 sys_getppid(void)
+{
+struct proc *p = myproc();
+  struct proc *parent_p = 0;
+  int ppid = 1; // Default for initproc
+
+  // CRITICAL STEP: Acquire the lock that protects p->parent
+  acquire(&wait_lock);
+
+  parent_p = p->parent;
+
+  if (parent_p) {
+      // If a parent exists, get its PID
+      ppid = parent_p->pid;
+  }
+
+  // Release the lock immediately after reading the pointer/PID
+  release(&wait_lock);
+
+  return ppid;
+}
+
+extern void cmostime(struct rtcdate *r); // Extern from time.c
+
+uint64
+sys_datetime(void)
+{
+  uint64 addr; // User space address
+  struct rtcdate r;
+
+  // 1. Get the user space address where the structure will be stored
+  argaddr(0, &addr);
+
+  // 2. Compute the current time
+  cmostime(&r);
+
+  // 3. Copy the 'r' structure (sizeof(r) bytes) to the user-provided address
+  if (copyout(myproc()->pagetable, addr, (char*)&r, sizeof(r)) < 0) {
+      return -1; // Copy failed
+  }
+
+  return 0; // Success
 }
