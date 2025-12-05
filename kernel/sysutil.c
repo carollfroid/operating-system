@@ -21,3 +21,24 @@ uint64 sys_countsyscall(void)
     // Return the total count
     return syscall_count; // <-- 2. RETURN THE COUNTER VALUE
 }
+#define FINISHER_ADDR 0x100000
+
+uint64 sys_shutdown(void) {
+    printf("XV6: System shutting down via MMIO...\n");
+
+    // Declare a volatile pointer to the Finisher MMIO address
+    volatile uint32 *finisher = (volatile uint32 *)FINISHER_ADDR;
+
+    // Use a clean write, often 0x5555 for guaranteed exit success.
+    *finisher = 0x5555; // <--- Use a robust magic value
+
+    // Crucial: The CPU needs to halt immediately to prevent the function from returning.
+    // If QEMU fails to recognize the signal, the system must freeze here.
+    for(;;) {
+        // If your xv6 version has a simple 'wfi()' function, use that.
+        // Otherwise, use the asm volatile instruction.
+        asm volatile("wfi");
+    }
+
+    return 0; // Unreachable
+}

@@ -1,4 +1,3 @@
-// System call numbers
 #define SYS_fork    1
 #define SYS_exit    2
 #define SYS_wait    3
@@ -24,3 +23,4 @@
 #define SYS_getppid 23
 #define SYS_datetime 24
 #define SYS_countsyscall 25
+#define SYS_shutdown 26

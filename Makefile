@@ -157,6 +157,7 @@ UPROGS=\
 	$U/_datetime\
 	$U/_countsyscall\
 	$U/_uptime\
+	$U/_shutdown\
 
 
 fs.img: mkfs/mkfs README $(UPROGS)

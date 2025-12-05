@@ -34,6 +34,10 @@ kvmmake(void)
 
   // PLIC
   kvmmap(kpgtbl, PLIC, PLIC, 0x4000000, PTE_R | PTE_W);
+#define FINISHER_ADDR 0x100000
+
+// Add this mapping alongside UART, PLIC, etc.
+  kvmmap(kpgtbl, FINISHER_ADDR, FINISHER_ADDR, PGSIZE, PTE_R | PTE_W);
 
   kvmmap(kpgtbl, CLINT, CLINT, CLINT_SIZE, PTE_R | PTE_W); // <-- INSERT THIS LINE
   // map kernel text executable and read-only.
