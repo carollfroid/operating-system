@@ -153,7 +153,7 @@ UPROGS=\
         $U/_tail\
         $U/_diff\
 	$U/_keycount\
-	$U/_getppidtest\
+	$U/_getppid\
 	$U/_datetime\
 	$U/_countsyscall\
 	$U/_uptime\
