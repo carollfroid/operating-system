@@ -11,6 +11,7 @@ struct superblock;
 #include "types.h"     // For uint64, uchar, uint
 #include "riscv.h"     // For pagetable_t and pte_t
 #include "param.h"     // For global constants often used in function prototypes
+#include "memlayout.h"  // Defines pagetable_t
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -109,6 +110,7 @@ int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
 
+
 // swtch.S
 void            swtch(struct context*, struct context*);
 
@@ -136,9 +138,9 @@ int             strncmp(const char*, const char*, uint);
 char*           strncpy(char*, const char*, int);
 
 // syscall.c
-void            argint(int, int*);
+int            argint(int, int*);
 int             argstr(int, char*, int);
-void            argaddr(int, uint64 *);
+int            argaddr(int, uint64 *);
 int             fetchstr(uint64, char*, int);
 int             fetchaddr(uint64, uint64*);
 void            syscall();
@@ -175,6 +177,8 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
+uint64 sys_urand(void);
+uint64 getptable(int, uint64);
 
 // plic.c
 void            plicinit(void);

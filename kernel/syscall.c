@@ -53,19 +53,21 @@ argraw(int n)
 }
 
 // Fetch the nth 32-bit system call argument.
-void
+int
 argint(int n, int *ip)
 {
   *ip = argraw(n);
+  return 0;
 }
 
 // Retrieve an argument as a pointer.
 // Doesn't check for legality, since
 // copyin/copyout will do that.
-void
-argaddr(int n, uint64 *ip)
+int argaddr(int, uint64 *);
+int argaddr(int n, uint64 *ip)
 {
   *ip = argraw(n);
+  return 0;
 }
 
 // Fetch the nth word-sized system call argument as a null-terminated string.
@@ -105,7 +107,12 @@ extern uint64 sys_kbdint(void);
 extern uint64 sys_getppid(void);
 extern uint64 sys_datetime(void);
 extern uint64 sys_countsyscall(void);
+<<<<<<< Updated upstream
 extern uint64 sys_shutdown(void);
+=======
+extern uint64 sys_rand(void);
+extern uint64 sys_getptable(void);
+>>>>>>> Stashed changes
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -135,8 +142,13 @@ static uint64 (*syscalls[])(void) = {
 [SYS_getppid]   sys_getppid,
 [SYS_datetime] sys_datetime,
 [SYS_countsyscall] sys_countsyscall,
+<<<<<<< Updated upstream
 [SYS_shutdown] sys_shutdown,
 
+=======
+[SYS_urand] sys_urand,
+[SYS_getptable] sys_getptable,
+>>>>>>> Stashed changes
 };
 extern uint64 syscall_count;
 

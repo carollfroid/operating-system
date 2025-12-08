@@ -24,3 +24,5 @@
 #define SYS_datetime 24
 #define SYS_countsyscall 25
 #define SYS_shutdown 26
+#define SYS_urand 27
+#define SYS_getptable 28

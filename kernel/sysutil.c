@@ -2,6 +2,11 @@
 #include "defs.h" // Generally required for system call implementations
 #include "proc.h" // Generally required for system call implementations
 #include "spinlock.h" // Needed for struct spinlock definition
+#define RAND_A 1103515245ULL
+#define RAND_C 12345ULL
+#define RAND_M 0x7fffffffULL
+
+ uint64 next_rand = 1; // Initialize with a non-zero value
 // Existing implementation for kbdint:
 extern int keyboard_int_cnt;
 uint64 sys_kbdint()
@@ -41,4 +46,14 @@ uint64 sys_shutdown(void) {
     }
 
     return 0; // Unreachable
+  }
+
+uint64
+sys_urand(void)
+{
+
+  next_rand = (next_rand * RAND_A + RAND_C);
+
+  // Return the result, masked to keep it within the required range (e.g., 31 bits)
+  return (next_rand >> 16) & RAND_M;
 }
