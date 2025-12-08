@@ -158,6 +158,9 @@ UPROGS=\
 	$U/_countsyscall\
 	$U/_uptime\
 	$U/_shutdown\
+	$U/_urand\
+	$U/_getptable\
+
 
 
 fs.img: mkfs/mkfs README $(UPROGS)

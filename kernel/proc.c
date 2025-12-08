@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 
+extern uint64 next_rand;
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -55,8 +57,12 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
+      extern uint ticks;
+      next_rand = ticks; // You must declare next_rand as extern in proc.c if defined in sysutil.c
+
   }
 }
+
 
 // Must be called with interrupts disabled,
 // to prevent race with process being moved
@@ -77,7 +83,46 @@ mycpu(void)
   struct cpu *c = &cpus[id];
   return c;
 }
+uint64
+getptable(int nproc, uint64 buffer_addr)
+{
+  struct proc *p;
+  struct proc info;
+  int count = 0; // Tracks number of processes successfully copied
 
+  if (nproc < 1) { // Check for nproc invalidity
+    return 0; // Failure
+  }
+
+  // Iterate over the kernel's process table
+  for (p = proc; p < &proc[NPROC] && count < nproc; p++) {
+    acquire(&p->lock);
+
+    if (p->state != UNUSED) { // Only copy active processes
+      // 1. Fill the proc_info structure using data from struct proc
+      info.pid = p->pid;
+     info.ppid = p->parent ? p->parent->pid : 0;// Get PID of parent or 0 if init
+      info.state = p->state;
+      info.sz = p->sz;
+      safestrcpy(info.name, p->name, sizeof(info.name));
+
+      // 2. Calculate the destination address in the user's buffer
+      uint64 dst_addr = buffer_addr + count * sizeof(struct proc);
+
+      // 3. Safely copy the data from kernel space (&info) to user space (dst_addr)
+      if (copyout(p->pagetable, dst_addr, (char *)&info, sizeof(info)) < 0) {
+        release(&p->lock);
+        return 0; // Failure if copyout fails
+      }
+
+      count++;
+    }
+    release(&p->lock);
+  }
+
+  return 1; // Success
+  return 0; // Failure
+}
 // Return the current struct proc *, or zero if none.
 struct proc*
 myproc(void)
@@ -145,6 +190,13 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
+   memset(&p->context, 0, sizeof(p->context));
+  p->context.ra = (uint64)forkret;
+  p->context.sp = p->kstack + PGSIZE;
+
+	// initialize new variables here
+  p->creation_time = ticks;
+  p->run_time = 0;
 
   return p;
 }
@@ -169,6 +221,8 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->creation_time = ticks;
+  p->run_time = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -441,6 +495,19 @@ wait(uint64 addr)
 //  - swtch to start running that process.
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
+void
+update_time()
+{
+  struct proc* p;
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state == RUNNING) {
+      p->run_time++;
+    }
+
+    release(&p->lock);
+  }
+}
 void
 scheduler(void)
 {

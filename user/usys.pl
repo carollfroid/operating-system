@@ -41,3 +41,5 @@ entry("getppid");
 entry("datetime");
 entry("countsyscall");
 entry("shutdown");
+entry("urand");
+entry("getptable")

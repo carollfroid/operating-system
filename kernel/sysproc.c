@@ -139,3 +139,21 @@ sys_datetime(void)
 
   return 0; // Success
 }
+extern uint64 getptable(int, uint64);
+
+// This is the function the system call table points to (zero arguments)
+uint64
+sys_getptable(void)
+{
+  int nproc;
+  uint64 buffer_addr; // The user-provided address
+
+  // Retrieve the first argument (nproc) as an integer
+  if (argint(0, &nproc) < 0) return 0; // Failure
+
+  // Retrieve the second argument (buffer_addr) as a memory address
+  if (argaddr(1, &buffer_addr) < 0) return 0; // Failure
+
+  // Call the core logic function defined in proc.c
+  return getptable(nproc, buffer_addr);
+}
