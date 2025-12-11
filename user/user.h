@@ -1,6 +1,9 @@
 #include "kernel/stat.h"
 struct stat;
-
+struct procinfo{
+  int turn_around;
+  int waiting_time;
+};
 // system calls
 int fork(void);
 int exit(int) __attribute__((noreturn));
@@ -33,6 +36,8 @@ int urand(void);
 uint64 getptable(int, uint64);
 
 //>>>>>>> Stashed changes
+int updatedwait(struct procinfo*);
+
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);

@@ -85,7 +85,7 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-// Per-process state
+// Per-process state pcb
 struct proc {
   struct spinlock lock;
 
@@ -109,7 +109,19 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];
-   uint creation_time;          // Ticks when process was created
+  uint creation_time;          // Ticks when process was created
   uint run_time;               // How long the process has run
            // Process name (debugging)
+  char name[16];               // Process name (debugging)
+  uint creation_time;          // Ticks when process was created
+  uint run_time;
+  uint turn_around;
+  uint waiting_time;
+  uint finish_time;
+
+
 };
+#define SCHED_ROUND_ROBIN 0
+#define SCHED_FCFS        1
+
+extern int sched_mode;  // Declare global scheduler mode

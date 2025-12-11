@@ -21,7 +21,7 @@ main(int argc, char *argv[])
     }
     num1 = atoi(argv[1]);
 
-    if (num1 <= 0) {
+    if (num1 <= 0 && strcmp(argv[1], "?") != 0) {
         fprintf(2, "sleep: argument must be a positive integer.\n");
         print_usage();
     }

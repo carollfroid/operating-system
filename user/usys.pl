@@ -43,3 +43,4 @@ entry("countsyscall");
 entry("shutdown");
 entry("urand");
 entry("getptable")
+entry("updatedwait");

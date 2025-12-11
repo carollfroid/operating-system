@@ -143,7 +143,6 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 	$U/_add\
-        $U/_keycount\
         $U/_sleep\
         $U/_find\
         $U/_touch\
@@ -152,14 +151,16 @@ UPROGS=\
         $U/_fact\
         $U/_tail\
         $U/_diff\
-	$U/_keycount\
+	$U/_kbdint\
 	$U/_getppid\
+	$U/_nano\
 	$U/_datetime\
 	$U/_countsyscall\
 	$U/_uptime\
 	$U/_shutdown\
 	$U/_urand\
 	$U/_getptable\
+	$U/_schedtest\
 
 
 

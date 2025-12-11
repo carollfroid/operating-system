@@ -17,80 +17,96 @@ void print_usage() {
 
 // Function to print the last N lines (using read only, NO LSEEK)
 void tail(char *filename, int n_lines) {
-    int offsets[MAX_LINES + 1];
+    // Use a pointer and dynamic allocation for the offsets array
+    int *offsets;
     char buf[BUF_SIZE];
-    int current_offset = 0;
-    int line_count = 0;
+    int file_size = 0; // Tracks total bytes read (absolute offset)
+    int line_count = 0; // Total lines (terminated or not)
     int bytes_read;
-    int fd; // Local file descriptor
+    int fd;
 
-    // File must be reopened for the second pass, so stdin is not supported in this mode
-    // If filename is null, it means stdin was requested, which is not seekable.
     if (filename == 0) {
         fprintf(2, "tail: reading from stdin is not supported without lseek.\n");
         exit(1);
     }
 
-    // Open the file for the first pass (reading offsets)
-    if ((fd = open(filename, O_RDONLY)) < 0) {
-        fprintf(2, "tail: cannot open %s for first pass.\n", filename);
+    // Allocate offsets array on the heap (MAX_LINES+1 spots: offsets[0] to offsets[MAX_LINES])
+    offsets = (int*)malloc((MAX_LINES + 1) * sizeof(int));
+    if (offsets == 0) {
+        fprintf(2, "tail: malloc failed.\n");
         exit(1);
     }
 
-    // Pass 1: Read file and record line offsets
-    offsets[0] = 0;
+    // --- Pass 1: Read file and record line offsets ---
+    if ((fd = open(filename, O_RDONLY)) < 0) {
+        fprintf(2, "tail: cannot open %s for first pass.\n", filename);
+        free(offsets);
+        exit(1);
+    }
+
+    offsets[0] = 0; // The start of the first line (Line 1) is at byte 0.
+
     while ((bytes_read = read(fd, buf, BUF_SIZE)) > 0) {
         for (int i = 0; i < bytes_read; i++) {
             if (buf[i] == '\n') {
-                line_count++;
-                if (line_count < MAX_LINES) {
-                    offsets[line_count] = current_offset + i + 1;
+                line_count++; // Total terminated lines found (N)
+
+                // Store the offset for the *next* line (Line N+1) at array index N.
+                if (line_count <= MAX_LINES) {
+                    offsets[line_count] = file_size + i + 1;
                 }
             }
         }
-        current_offset += bytes_read;
+        file_size += bytes_read;
     }
 
     if (bytes_read < 0) {
         fprintf(2, "tail: read error during first pass.\n");
         close(fd);
+        free(offsets);
         exit(1);
     }
 
     close(fd); // Close the file after the first pass
 
-    // 2. Determine start index and byte offset
-    int start_line_index;
-
-    if (line_count <= n_lines) {
-        start_line_index = 0;
-    } else {
-        start_line_index = line_count - n_lines;
-        if (start_line_index < 0) {
-             start_line_index = 0;
+    // --- Critical Fix: Handle Uncounted Final Line ---
+    if (file_size > 0 && line_count < MAX_LINES) {
+        // If the file is not empty AND the last recorded offset (offsets[line_count])
+        // is less than the total file size, a non-terminated line exists.
+        if (line_count == 0 || offsets[line_count] < file_size) {
+            line_count++; // Increment count to include the final segment.
         }
     }
 
-    int array_index_to_use = start_line_index;
-    if (array_index_to_use > MAX_LINES) {
-        array_index_to_use = MAX_LINES;
-    }
 
-    // Get the byte offset where printing should start
-    int start_byte_offset = 0;
-    if (line_count > MAX_LINES) {
-        start_byte_offset = offsets[MAX_LINES];
+    // --- Pass 2: Determine start offset ---
+
+    int start_index_for_offsets;
+
+    if (line_count <= n_lines) {
+        // Start from the very beginning (offsets[0]).
+        start_index_for_offsets = 0;
     } else {
-        start_byte_offset = offsets[array_index_to_use];
+        // Correct formula: Index = Total Lines - Lines to Show.
+        // This index points to the start of the Nth-to-last line segment.
+        start_index_for_offsets = line_count - n_lines;
     }
 
-    // Pass 2: Open the file again (pointer reset to 0)
+    // Cap the index if the file was too long (more than MAX_LINES lines were found).
+    if (start_index_for_offsets > MAX_LINES) {
+        start_index_for_offsets = MAX_LINES;
+    }
+
+    int start_byte_offset = offsets[start_index_for_offsets];
+
+
+    // --- Pass 3: Open file again and discard bytes ---
     if ((fd = open(filename, O_RDONLY)) < 0) {
         fprintf(2, "tail: cannot open %s for second pass.\n", filename);
+        free(offsets);
         exit(1);
     }
 
-    // Pass 3: Read and discard data until the start offset is reached
     int bytes_to_discard = start_byte_offset;
     int bytes_discarded = 0;
 
@@ -102,17 +118,20 @@ void tail(char *filename, int n_lines) {
         if (bytes_read <= 0) {
             fprintf(2, "tail: failed to discard to start offset.\n");
             close(fd);
+            free(offsets);
             exit(1);
         }
         bytes_discarded += bytes_read;
     }
 
-    // Pass 4: Read and print the remaining content
+    // --- Pass 4: Read and print the remaining content ---
     while ((bytes_read = read(fd, buf, BUF_SIZE)) > 0) {
         write(1, buf, bytes_read);
     }
 
+    // Final cleanup
     close(fd);
+    free(offsets);
 }
 
 int
@@ -128,6 +147,7 @@ main(int argc, char *argv[])
         print_usage();
     }
 
+    // Parse the -n flag and its argument
     if (argc > 1 && strcmp(argv[i], "-n") == 0) {
         i++;
         if (i >= argc) {
@@ -142,16 +162,13 @@ main(int argc, char *argv[])
         i++;
     }
 
+    // Get the optional filename
     if (i < argc) {
         filename = argv[i];
     }
 
     // --- 2. Core Logic Execution ---
-
-    // We pass the filename string instead of the descriptor because we need to reopen it (no lseek)
     tail(filename, n_lines);
 
     exit(0);
-
-    //works but needs to be tested
 }

@@ -197,6 +197,12 @@ found:
 	// initialize new variables here
   p->creation_time = ticks;
   p->run_time = 0;
+  p->creation_time = ticks;
+  p->run_time = 0;
+  p->waiting_time = 0;
+  p->finish_time = 0;
+  p->turn_around = 0;
+
 
   return p;
 }
@@ -223,7 +229,12 @@ freeproc(struct proc *p)
   p->state = UNUSED;
   p->creation_time = ticks;
   p->run_time = 0;
+  p->waiting_time = 0;
+  p->finish_time = 0;
+  p->turn_around = 0;
 }
+
+
 
 // Create a user page table for a given process, with no user memory,
 // but with trampoline and trapframe pages.
@@ -401,7 +412,6 @@ void
 exit(int status)
 {
   struct proc *p = myproc();
-
   if(p == initproc)
     panic("init exiting");
 
@@ -431,6 +441,8 @@ exit(int status)
 
   p->xstate = status;
   p->state = ZOMBIE;
+  p->finish_time=ticks;
+  p->turn_around=p->finish_time-p->creation_time;
 
   release(&wait_lock);
 
@@ -441,6 +453,59 @@ exit(int status)
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
+int
+updatedwait(uint64 addr)
+{
+  struct proc *pp;
+  int havekids, pid;
+  struct proc *p = myproc();
+
+  struct procinfo{
+  int turn_around;
+  int waiting_time;
+  }st;
+
+  acquire(&wait_lock);
+
+  for(;;){
+    // Scan through table looking for exited children.
+    havekids = 0;
+    for(pp = proc; pp < &proc[NPROC]; pp++){
+      if(pp->parent == p){
+        // make sure the child isn't still in exit() or swtch().
+        acquire(&pp->lock);
+
+        havekids = 1;
+        if(pp->state == ZOMBIE){
+          // Found one.
+          pid = pp->pid;
+          st.turn_around=pp->turn_around;
+          st.waiting_time=pp->waiting_time;
+
+          if(addr != 0 && copyout(p->pagetable, addr, (char *)&st,sizeof(st)) < 0) {
+            release(&pp->lock);
+            release(&wait_lock);
+            return -1;
+          }
+          freeproc(pp);
+          release(&pp->lock);
+          release(&wait_lock);
+          return pid;
+        }
+        release(&pp->lock);
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if(!havekids || killed(p)){
+      release(&wait_lock);
+      return -1;
+    }
+
+    // Wait for a child to exit.
+    sleep(p, &wait_lock);  //DOC: wait-sleep
+  }
+}
 int
 wait(uint64 addr)
 {
@@ -487,7 +552,22 @@ wait(uint64 addr)
     sleep(p, &wait_lock);  //DOC: wait-sleep
   }
 }
+void
+update_time()
+{
+  struct proc* p;
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state == RUNNING) {
+      p->run_time++;
+    }
+    else if (p->state == RUNNABLE) {
+      p->waiting_time++;
+    }
 
+    release(&p->lock);
+  }
+}
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -495,6 +575,34 @@ wait(uint64 addr)
 //  - swtch to start running that process.
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
+int sched_mode = SCHED_ROUND_ROBIN;  // Assign the chosen scheduler here
+struct proc *choose_next_process() {
+
+  struct proc *p;
+
+  if(sched_mode == SCHED_ROUND_ROBIN) {
+    for(p = proc; p < &proc[NPROC]; p++) {
+      if (p->state == RUNNABLE)
+        return p;
+      }
+  }
+  //else if (sched_mode == SCHED_FCFS) {
+    // TODO imp fcfs
+
+   // return p;
+
+ // }
+ //else if (sched_mode == SCHED_priority) {
+    // TODO imp priority
+
+   // return p;
+
+ // }
+
+  // Add more else statements each time you create a new scheduler
+
+  return 0;
+}
 void
 update_time()
 {
@@ -511,7 +619,7 @@ update_time()
 void
 scheduler(void)
 {
-  struct proc *p;
+ struct proc *p;
   struct cpu *c = mycpu();
 
   c->proc = 0;
@@ -522,15 +630,16 @@ scheduler(void)
     intr_on();
 
     int found = 0;
-    for(p = proc; p < &proc[NPROC]; p++) {
+
+    p = choose_next_process();
+
+    if(p != 0) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
+
+      if (p->state == RUNNABLE) {
         p->state = RUNNING;
         c->proc = p;
-        swtch(&c->context, &p->context);
+        swtch(&c->context, &p->context); //search
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.

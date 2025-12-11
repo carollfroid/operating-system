@@ -127,7 +127,7 @@ sys_datetime(void)
   struct rtcdate r;
 
   // 1. Get the user space address where the structure will be stored
-  argaddr(0, &addr);
+  argaddrs(0, &addr);
 
   // 2. Compute the current time
   cmostime(&r);
@@ -156,4 +156,12 @@ sys_getptable(void)
 
   // Call the core logic function defined in proc.c
   return getptable(nproc, buffer_addr);
+uint64
+sys_updatedwait(void)
+{
+  uint64 p;
+  if(argaddr(0,&p)<0){
+    return -1;
+  }
+return updatedwait(p);
 }
