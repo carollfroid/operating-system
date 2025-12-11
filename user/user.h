@@ -27,12 +27,14 @@ int kbdint(void);
 int getppid(void);
 int datetime(struct rtcdate *r);
 int countsyscall(void);
-//<<<<<<< Updated upstream
 int shutdown(void);
 int urand(void);
 uint64 getptable(int, uint64);
+int set_fcfs(void);
+int set_priority(void);
+int get_avg_metrics(uint64 results_addr);
+int set_priority_level(int level);
 
-//>>>>>>> Stashed changes
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);
@@ -47,6 +49,7 @@ void* memset(void*, int, uint);
 int atoi(const char*);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
+
 
 // umalloc.c
 void* malloc(uint);

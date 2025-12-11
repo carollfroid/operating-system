@@ -157,3 +157,49 @@ sys_getptable(void)
   // Call the core logic function defined in proc.c
   return getptable(nproc, buffer_addr);
 }
+uint64
+sys_get_avg_metrics(void)
+{
+    uint64 user_buffer_addr;
+    struct avg_metrics metrics;
+
+    // 1. Retrieve the address of the user buffer (the first argument)
+    if (argaddr(0, &user_buffer_addr) < 0) return 0;
+
+    // 2. Calculate the averages in the kernel
+    if (calculate_metrics(&metrics) < 0) return 0;
+
+    // 3. Copy the result from kernel space (&metrics) to user space
+    struct proc *p = myproc();
+    if (copyout(p->pagetable, user_buffer_addr, (char *)&metrics,
+                sizeof(struct avg_metrics)) < 0) {
+        return 0; // Failure
+    }
+
+    return 1; // Success (copied one structure)
+}
+extern int argint(int, int*);
+
+uint64
+sys_set_priority_level(void)
+{
+    int priority_level;
+    struct proc *p = myproc();
+
+    // 1. Retrieve the integer argument (the priority level)
+    if (argint(0, &priority_level) < 0) return -1;
+
+    // Basic validation (e.g., priority must be 0 or higher)
+    if (priority_level < 1) priority_level = 1;
+    if (priority_level > 100) priority_level = 100; // Assuming max is 100
+
+    // 2. Safely update the current process's priority field
+    acquire(&p->lock);
+    p->priority = priority_level;
+    release(&p->lock);
+
+    // 3. (Optional but Recommended) If changing priority, yield to allow immediate rescheduling.
+    yield();
+
+    return 0; // Success
+}

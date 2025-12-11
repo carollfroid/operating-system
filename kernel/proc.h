@@ -2,6 +2,10 @@
 #include "types.h"     // For basic types like uint, uint64
 #include "riscv.h"     // For pagetable_t and pte_t (which pagetable_t often depends on)
 #include "param.h"
+#define SCHED_RR 0      // Round Robin (Default)
+#define SCHED_FCFS 1    // First Come First Serve
+#define SCHED_PRIORITY 2 // Priority Bases
+extern int sched_mode;
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -111,5 +115,9 @@ struct proc {
   char name[16];
    uint creation_time;          // Ticks when process was created
   uint run_time;               // How long the process has run
+  uint waiting_time;   // Time spent in RUNNABLE state
+  uint finish_time;    // Ticks when process exited (Law 7 for ZOMBIE)
+  int priority;        // For Priority-Based Scheduling
+  uint turnaround_time; // Calculated time (Finish - Creation)
            // Process name (debugging)
 };

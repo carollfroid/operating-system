@@ -42,4 +42,8 @@ entry("datetime");
 entry("countsyscall");
 entry("shutdown");
 entry("urand");
-entry("getptable")
+entry("getptable");
+entry("set_fcfs");
+entry("set_priority");
+entry("set_priority_level");
+entry("get_avg_metrics");

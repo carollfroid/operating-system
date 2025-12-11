@@ -160,6 +160,11 @@ UPROGS=\
 	$U/_shutdown\
 	$U/_urand\
 	$U/_getptable\
+	$U/_schedtest\
+	$U/_setfcfs\
+	$U/_setpriority\
+
+
 
 
 

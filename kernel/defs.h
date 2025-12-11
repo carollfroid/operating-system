@@ -97,6 +97,7 @@ int             killed(struct proc*);
 void            setkilled(struct proc*);
 struct cpu*     mycpu(void);
 struct cpu*     getmycpu(void);
+void            update_time(void);
 struct proc*    myproc();
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
@@ -109,7 +110,6 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
-
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -179,6 +179,15 @@ int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
 uint64 sys_urand(void);
 uint64 getptable(int, uint64);
+uint64 sys_set_fcfs(void);
+uint64 sys_set_priority(void);
+uint64 sys_get_avg_metrics(void);
+uint64 sys_set_priority_level(void);
+struct avg_metrics {
+    uint avg_turnaround;
+    uint avg_waiting;
+};
+int calculate_metrics(struct avg_metrics *metrics);
 
 // plic.c
 void            plicinit(void);

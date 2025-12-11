@@ -107,12 +107,10 @@ extern uint64 sys_kbdint(void);
 extern uint64 sys_getppid(void);
 extern uint64 sys_datetime(void);
 extern uint64 sys_countsyscall(void);
-<<<<<<< Updated upstream
 extern uint64 sys_shutdown(void);
-=======
-extern uint64 sys_rand(void);
+extern uint64 sys_urand(void);
 extern uint64 sys_getptable(void);
->>>>>>> Stashed changes
+
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -142,13 +140,13 @@ static uint64 (*syscalls[])(void) = {
 [SYS_getppid]   sys_getppid,
 [SYS_datetime] sys_datetime,
 [SYS_countsyscall] sys_countsyscall,
-<<<<<<< Updated upstream
 [SYS_shutdown] sys_shutdown,
-
-=======
 [SYS_urand] sys_urand,
 [SYS_getptable] sys_getptable,
->>>>>>> Stashed changes
+[SYS_getptable]    sys_getptable,
+[SYS_set_fcfs]     sys_set_fcfs,
+[SYS_set_priority] sys_set_priority,
+[SYS_get_avg_metrics] sys_get_avg_metrics,
 };
 extern uint64 syscall_count;
 
@@ -157,7 +155,7 @@ syscall(void)
 {
   int num;
   struct proc *p = myproc();
-  syscall_count++; // <-- CRITICAL: ADD THIS LINE
+  syscall_count++;
 
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {

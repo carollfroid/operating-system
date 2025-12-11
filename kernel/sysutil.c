@@ -57,3 +57,15 @@ sys_urand(void)
   // Return the result, masked to keep it within the required range (e.g., 31 bits)
   return (next_rand >> 16) & RAND_M;
 }
+uint64
+sys_set_fcfs(void)
+{
+    sched_mode = SCHED_FCFS;
+    return 0; // Success
+}
+uint64
+sys_set_priority(void)
+{
+    sched_mode = SCHED_PRIORITY;
+    return 0; // Success
+}

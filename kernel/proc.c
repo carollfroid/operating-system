@@ -13,6 +13,7 @@ struct cpu cpus[NCPU];
 struct proc proc[NPROC];
 
 struct proc *initproc;
+int sched_mode = SCHED_RR;
 
 int nextpid = 1;
 struct spinlock pid_lock;
@@ -170,6 +171,16 @@ found:
   p->pid = allocpid();
   p->state = USED;
 
+  acquire(&tickslock);
+  p->creation_time = ticks;
+  release(&tickslock);
+
+  p->run_time = 0;       // Reset
+  p->waiting_time = 0;   // Reset
+  p->finish_time = 0;    // Reset
+  p->turnaround_time = 0; // Reset
+  p->priority = 5;
+
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
@@ -223,6 +234,11 @@ freeproc(struct proc *p)
   p->state = UNUSED;
   p->creation_time = ticks;
   p->run_time = 0;
+  p->waiting_time = 0;
+  p->finish_time = 0;
+  p->turnaround_time = 0;
+  p->priority = 0;
+
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -431,6 +447,10 @@ exit(int status)
 
   p->xstate = status;
   p->state = ZOMBIE;
+  acquire(&tickslock); // Acquire lock to safely read 'ticks'
+  p->finish_time = ticks;
+  p->turnaround_time = p->finish_time - p->creation_time;
+  release(&tickslock);
 
   release(&wait_lock);
 
@@ -504,6 +524,9 @@ update_time()
     if (p->state == RUNNING) {
       p->run_time++;
     }
+    if (p->state == RUNNABLE) {
+      p->waiting_time++; // Update time spent waiting in the ready queue
+    }
 
     release(&p->lock);
   }
@@ -513,6 +536,7 @@ scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
+  struct proc *found ;
 
   c->proc = 0;
   for(;;){
@@ -521,23 +545,49 @@ scheduler(void)
     // processes are waiting.
     intr_on();
 
-    int found = 0;
+    //int found = 0; round robin logic
+    found =0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
+        release(&p->lock);
+        continue;
+      }
+      //fcfs
+      if (sched_mode == SCHED_FCFS) {
+        if (found == 0 || p->creation_time < found->creation_time) {
+          if (found != 0) release(&found->lock);
+          found = p; // the found process (Lock held)
+          continue;
+        }
+      }
+      //priorty
+      else if (sched_mode == SCHED_PRIORITY) {
+        if (found == 0 || p->priority < found->priority) {
+          if (found != 0) release(&found->lock);
+          found = p;
+          continue;
+        }
+      }
+      //RR
+      else {
+      found = p;
+        break;
+      }
+      if (found != 0) {
+      found->state = RUNNING;
+      c->proc = found;
+
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
+        swtch(&c->context, &found->context);
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
-        found = 1;
       }
-      release(&p->lock);
+      release(&found->lock);
     }
     if(found == 0) {
       // nothing to run; stop running on this core until an interrupt.
@@ -546,7 +596,34 @@ scheduler(void)
     }
   }
 }
+int
+calculate_metrics(struct avg_metrics *metrics)
+{
+    struct proc *p;
+    uint total_turnaround = 0;
+    uint total_waiting = 0;
+    int terminated_count = 0;
 
+    for (p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+
+        // Only count processes that have calculated final metrics (i.e., exited/ZOMBIE)
+        // If the process is UNUSED, it might still hold stale data, so check ZOMBIE or FINISH_TIME > 0
+        if (p->turnaround_time > 0) {
+            total_turnaround += p->turnaround_time;
+            total_waiting += p->waiting_time;
+            terminated_count++;
+        }
+        release(&p->lock);
+    }
+
+    if (terminated_count > 0) {
+        metrics->avg_turnaround = total_turnaround / terminated_count;
+        metrics->avg_waiting = total_waiting / terminated_count;
+        return 0; // Success
+    }
+    return -1; // Failure
+}
 // Switch to scheduler.  Must hold only p->lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this

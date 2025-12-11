@@ -26,3 +26,7 @@
 #define SYS_shutdown 26
 #define SYS_urand 27
 #define SYS_getptable 28
+#define SYS_set_fcfs       29
+#define SYS_set_priority   30
+#define SYS_get_avg_metrics 31
+#define SYS_set_priority_level 32
