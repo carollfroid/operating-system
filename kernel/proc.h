@@ -110,10 +110,6 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];
   uint creation_time;          // Ticks when process was created
-  uint run_time;               // How long the process has run
-           // Process name (debugging)
-  char name[16];               // Process name (debugging)
-  uint creation_time;          // Ticks when process was created
   uint run_time;
   uint turn_around;
   uint waiting_time;
