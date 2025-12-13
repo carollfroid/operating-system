@@ -123,5 +123,7 @@ struct proc {
 };
 #define SCHED_ROUND_ROBIN 0
 #define SCHED_FCFS        1
+#define SCHED_priority 2
+
 
 extern int sched_mode;  // Declare global scheduler mode
