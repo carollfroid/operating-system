@@ -636,19 +636,6 @@ struct proc *choose_next_process() {
 }
 
 void
-update_time()
-{
-  struct proc* p;
-  for (p = proc; p < &proc[NPROC]; p++) {
-    acquire(&p->lock);
-    if (p->state == RUNNING) {
-      p->run_time++;
-    }
-
-    release(&p->lock);
-  }
-}
-void
 scheduler(void)
 {
  struct proc *p;
