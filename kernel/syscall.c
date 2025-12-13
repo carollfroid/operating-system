@@ -65,7 +65,6 @@ argint(int n, int *ip)
 // copyin/copyout will do that.
 int argaddr(int, uint64 *);
 int argaddr(int n, uint64 *ip)
-int argaddr(int n, uint64 *ip)
 {
   *ip = argraw(n);
   return 0;
