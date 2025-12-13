@@ -26,4 +26,4 @@
 #define SYS_shutdown 26
 #define SYS_urand 27
 #define SYS_getptable 28
-#define SYS_updatedwait 27
+#define SYS_updatedwait 29
