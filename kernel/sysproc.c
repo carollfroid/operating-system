@@ -156,6 +156,7 @@ sys_getptable(void)
 
   // Call the core logic function defined in proc.c
   return getptable(nproc, buffer_addr);
+}
 uint64
 sys_updatedwait(void)
 {
