@@ -575,7 +575,7 @@ update_time()
 //  - swtch to start running that process.
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
-int sched_mode = SCHED_ROUND_ROBIN;  // Assign the chosen scheduler here
+int sched_mode = SCHED_priority;  // Assign the chosen scheduler here
 struct proc *choose_next_process() {
 
   struct proc *p;
@@ -586,23 +586,55 @@ struct proc *choose_next_process() {
         return p;
       }
   }
-  //else if (sched_mode == SCHED_FCFS) {
+  else if (sched_mode == SCHED_FCFS) {
     // TODO imp fcfs
+    struct proc *best_p=0;
+     for(p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if (p->state == RUNNABLE){
+        if(best_p==0||p->creation_time<best_p->creation_time)
+        best_p=p;
+      }
+      release(&p->lock);
+     }
 
-   // return p;
+    return best_p;
+ }
+ else if (sched_mode == SCHED_priority) {
+    struct proc *chosen_p = 0;
+    // We want the lowest random number (highest priority), so initialize to MAX_UINT32.
+    uint32 best_random_score = 0xFFFFFFFF;
 
- // }
- //else if (sched_mode == SCHED_priority) {
-    // TODO imp priority
+    // Iterate through all processes
+    for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+      if (p->state == RUNNABLE) {
 
-   // return p;
+        // 1. Generate a dynamic "priority" score using your LCG logic
+        uint32 current_score = sys_urand();
 
- // }
+        // 2. Check if this random score is better (lower)
+        if (current_score < best_random_score) {
 
-  // Add more else statements each time you create a new scheduler
+          // Found a new best random winner
+          chosen_p = p;
+          best_random_score = current_score;
+        }
+      }
+
+      // OPTIONAL: If the scheduler MUST not wait for a full cycle,
+      // you could add a condition here to break early if a very good
+      // (e.g., score < 10) random number is found. But for a simple
+      // randomized scheduler, scanning the full list is typical.
+      release(&p->lock);
+
+    }
+    return chosen_p; // Returns the randomly selected process (or 0)
+  }
 
   return 0;
 }
+
 void
 update_time()
 {
